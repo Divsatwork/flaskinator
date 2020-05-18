@@ -1,7 +1,40 @@
 import os
-from .snippets import flask_snippets
 
 class FlaskApiGenerator:
+
+    def __init__(self):
+        self.__FLASK_HEADER = '''from flask import Flask,request
+        import json
+        app = Flask(__name__)'''
+
+        self.__FLASK_FOOTER = '\n\n\napp.run()'
+
+        self.__FLASK_API_GET_ROUTE_HEADER = '''\n\n@app.route("/%s")''' #replace %s with the route
+        self.__FLASK_API_POST_ROUTE_HEADER = '''\n\n@app.route("/%s", methods=['POST'])''' #replace %s with the route
+        self.__FLASK_DEF_DECLARATION = ''' \ndef %s(%s):''' #replace the function name and the function parameters
+        self.__FLASK_DEF_BODY_WITH_RESPONSE = '''\n\t#Write logic here\n\treturn json.dumps(%s().__dict__)''' #%s to replace response class name
+        self.__FLASK_DEF_BODY_WITHOUT_RESPONSE = '''\n\t#Write logic here\n\tpass'''
+
+        #Path variables. Here %s replaces with the variable name.
+        self.__FLASK_PATH_VAR_INT = '/<int:%s>'
+        self.__FLASK_PATH_VAR_STRING = '/<string:%s>'
+        self.__FLASK_PATH_VAR_FLOAT = '/<float:%s>'
+        self.__FLASK_PATH_VAR_PATH = '/<path:%s>'
+
+        #Class declarations. Mostly for Response bodies
+        self.__FLASK_CLASS_DECLARATION = '\nclass %s:'
+        self.__FLASK_CLASS_INIT_DEF = '''\n\tdef __init__(self):'''
+        self.__FLASK_CLASS_INIT_SELF_INT = '''\n\t\tself.%s = 0'''#%s to have variable name
+        self.__FLASK_CLASS_INIT_SELF_STRING = '''\n\t\tself.%s = ""'''
+        self.__FLASK_CLASS_INIT_SELF_DATE = '''\n\t\tself.%s = ""'''
+        self.__FLASK_CLASS_INIT_SELF_LIST = '''\n\t\tself.%s = []'''
+        self.__FLASK_CLASS_INIT_SELF_DICT = '''\n\t\tself.%s = {}'''
+        self.__FLASK_CLASS_INIT_IMPORT_SNIPPET = '''\n\timport responses.{class_name} as {class_name}'''
+
+        #Request Parametrs and its validation
+        self.__FLASK_DEF_BODY_REQ_PARAM_REQUIRED = '''\n\tassert request.args.get("%s") != None'''
+        self.__FLASK_DEF_BODY_REQ_PARAM_REQUIRED_TYPE = '''\n\tassert type(request.args.get("%s")) != %s'''
+        self.__FLASK_DEF_BODY_REQ_PARAM_NOT_REQUIRED = '''\n\t#assert request.args.get("%s") != None'''
 
     def createFile(self, filename, fileLocation):
         if filename is None:
@@ -55,12 +88,12 @@ class FlaskApiGenerator:
 
     def writeFileHeader(self, filename, fileLocation):
         with open(os.path.join(fileLocation,filename), 'w') as fp:
-            fp.write(flask_snippets.FLASK_HEADER)
+            fp.write(self.__FLASK_HEADER)
             fp.close()
 
     def writeFileFooter(self, filename, fileLocation):
         with open(os.path.join(fileLocation,filename), 'a') as fp:
-            fp.write(flask_snippets.FLASK_FOOTER)
+            fp.write(self.__FLASK_FOOTER)
 
     def writeGETapi(self, apiDetail, filename, fileLocation):
         print('Writing GET API: ', apiDetail['name'])
@@ -73,16 +106,16 @@ class FlaskApiGenerator:
             for i in apiDetail['path']:
                 #apiDetail['path'][i] defines the type of the path variable
                 if str(apiDetail['path'][i]).lower() == 'int':
-                    route += flask_snippets.FLASK_PATH_VAR_INT % i
+                    route += self.__FLASK_PATH_VAR_INT % i
                 elif str(apiDetail['path'][i]).lower() == 'string':
-                    route +=flask_snippets.FLASK_PATH_VAR_STRING % i
+                    route +=self.__FLASK_PATH_VAR_STRING % i
                 method_params = method_params+str(i)+','
             else:
                 method_params = method_params[:-1]
 
         with open(os.path.join(fileLocation,filename), 'a') as fp:
-            fp.write(flask_snippets.FLASK_API_GET_ROUTE_HEADER % route)
-            fp.write(flask_snippets.FLASK_DEF_DECLARATION %(apiDetail['name'], method_params))
+            fp.write(self.__FLASK_API_GET_ROUTE_HEADER % route)
+            fp.write(self.__FLASK_DEF_DECLARATION %(apiDetail['name'], method_params))
 
             if apiDetail['parameters'] is not None and type(apiDetail['parameters']) is dict:
                 for item in apiDetail['parameters'].items():
@@ -90,36 +123,36 @@ class FlaskApiGenerator:
                     #[(name, {type:int, required: true}), (id, {type:string, required:false})]
                     # one item = one tuple
                     if item[1]['required'] == True:
-                        fp.write(flask_snippets.FLASK_DEF_BODY_REQ_PARAM_REQUIRED % item[0])
-                        fp.write(flask_snippets.FLASK_DEF_BODY_REQ_PARAM_REQUIRED_TYPE %(item[0],item[1]['type']))
+                        fp.write(self.__FLASK_DEF_BODY_REQ_PARAM_REQUIRED % item[0])
+                        fp.write(self.__FLASK_DEF_BODY_REQ_PARAM_REQUIRED_TYPE %(item[0],item[1]['type']))
                     else:
-                        fp.write(flask_snippets.FLASK_DEF_BODY_REQ_PARAM_NOT_REQUIRED % item[0])
+                        fp.write(self.__FLASK_DEF_BODY_REQ_PARAM_NOT_REQUIRED % item[0])
 
             if apiDetail['response_body'] == {} or apiDetail['response_body'] is None:
-                fp.write(flask_snippets.FLASK_DEF_BODY_WITHOUT_RESPONSE)
+                fp.write(self.__FLASK_DEF_BODY_WITHOUT_RESPONSE)
             else:
                 #Write code to write the class with all the fields for response body and also
                 #create an __init__ file so that the file can be imported.
                 cfilename = apiDetail['response_body']['name']+'.py'
                 self.checkDir(os.path.join(fileLocation,'responses'))
                 cf = open(os.path.join((os.path.join(fileLocation,'responses')),cfilename), 'w')
-                cf.write(flask_snippets.FLASK_CLASS_DECLARATION % apiDetail['response_body']['name'])
-                cf.write(flask_snippets.FLASK_CLASS_INIT_DEF)
+                cf.write(self.__FLASK_CLASS_DECLARATION % apiDetail['response_body']['name'])
+                cf.write(self.__FLASK_CLASS_INIT_DEF)
                 for response_param in apiDetail['response_body']['fields']:
                     if str == type(apiDetail['response_body']['fields'][response_param]):
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_STRING % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_STRING % response_param)
                     elif int == type(apiDetail['response_body']['fields'][response_param]):
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_INT % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_INT % response_param)
                     elif list == type(apiDetail['response_body']['fields'][response_param]):
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_LIST % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_LIST % response_param)
                     elif dict == type(apiDetail['response_body']['fields'][response_param]):
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_DICT % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_DICT % response_param)
                     else:
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_STRING % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_STRING % response_param)
                 cf.close()
                 self.createFile('__init__.py', os.path.join(fileLocation,'responses'))
-                fp.write(flask_snippets.FLASK_CLASS_INIT_IMPORT_SNIPPET.format(class_name=str(apiDetail['response_body']['name'])))
-                fp.write(flask_snippets.FLASK_DEF_BODY_WITH_RESPONSE % (str(apiDetail['response_body']['name'])+'.'+ str(apiDetail['response_body']['name'])))
+                fp.write(self.__FLASK_CLASS_INIT_IMPORT_SNIPPET.format(class_name=str(apiDetail['response_body']['name'])))
+                fp.write(self.__FLASK_DEF_BODY_WITH_RESPONSE % (str(apiDetail['response_body']['name'])+'.'+ str(apiDetail['response_body']['name'])))
             
 
     def writePOSTapi(self, apiDetail, filename, fileLocation):
@@ -133,39 +166,39 @@ class FlaskApiGenerator:
             for i in apiDetail['path']:
                 #apiDetail['path'][i] defines the type of the path variable
                 if str(apiDetail['path'][i]).lower() == 'int':
-                    route += flask_snippets.FLASK_PATH_VAR_INT % i
+                    route += self.__FLASK_PATH_VAR_INT % i
                 elif str(apiDetail['path'][i]).lower() == 'string':
-                    route +=flask_snippets.FLASK_PATH_VAR_STRING % i
+                    route +=self.__FLASK_PATH_VAR_STRING % i
                 method_params = method_params+str(i)+','
             else:
                 method_params = method_params[:-1]
             print (route)
         with open(os.path.join(fileLocation,filename), 'a') as fp:
-            fp.write(flask_snippets.FLASK_API_POST_ROUTE_HEADER % route)
-            fp.write(flask_snippets.FLASK_DEF_DECLARATION %(apiDetail['name'], method_params))
+            fp.write(self.__FLASK_API_POST_ROUTE_HEADER % route)
+            fp.write(self.__FLASK_DEF_DECLARATION %(apiDetail['name'], method_params))
             if apiDetail['response_body'] == {} or apiDetail['response_body'] is None:
-                fp.write(flask_snippets.FLASK_DEF_BODY_WITHOUT_RESPONSE)
+                fp.write(self.__FLASK_DEF_BODY_WITHOUT_RESPONSE)
             else:
                 #Write code to write the class with all the fields for response body and also
                 #create an __init__ file so that the file can be imported.
                 cfilename = apiDetail['response_body']['name']+'.py'
                 self.checkDir(os.path.join(fileLocation,'responses'))
                 cf = open(os.path.join((os.path.join(fileLocation,'responses')),cfilename), 'w')
-                cf.write(flask_snippets.FLASK_CLASS_DECLARATION % apiDetail['response_body']['name'])
-                cf.write(flask_snippets.FLASK_CLASS_INIT_DEF)
+                cf.write(self.__FLASK_CLASS_DECLARATION % apiDetail['response_body']['name'])
+                cf.write(self.__FLASK_CLASS_INIT_DEF)
                 for response_param in apiDetail['response_body']['fields']:
                     if str == type(apiDetail['response_body']['fields'][response_param]):
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_STRING % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_STRING % response_param)
                     elif int == type(apiDetail['response_body']['fields'][response_param]):
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_INT % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_INT % response_param)
                     elif list == type(apiDetail['response_body']['fields'][response_param]):
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_LIST % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_LIST % response_param)
                     elif dict == type(apiDetail['response_body']['fields'][response_param]):
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_DICT % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_DICT % response_param)
                     else:
-                        cf.write(flask_snippets.FLASK_CLASS_INIT_SELF_STRING % response_param)
+                        cf.write(self.__FLASK_CLASS_INIT_SELF_STRING % response_param)
                 cf.close()
                 self.createFile('__init__.py', os.path.join(fileLocation,'responses'))
-                fp.write(flask_snippets.FLASK_CLASS_INIT_IMPORT_SNIPPET.format(class_name=str(apiDetail['response_body']['name'])))
-                fp.write(flask_snippets.FLASK_DEF_BODY_WITH_RESPONSE % (str(apiDetail['response_body']['name'])+'.'+ str(apiDetail['response_body']['name'])))
+                fp.write(self.__FLASK_CLASS_INIT_IMPORT_SNIPPET.format(class_name=str(apiDetail['response_body']['name'])))
+                fp.write(self.__FLASK_DEF_BODY_WITH_RESPONSE % (str(apiDetail['response_body']['name'])+'.'+ str(apiDetail['response_body']['name'])))
                 fp.close()
