@@ -1,0 +1,83 @@
+{
+	"list": [{
+		"route": "postTest",
+		"name": "postTestwithIdAndName",
+		"method": "POST",
+		"headers": {
+			"Authorization": "token"
+		},
+		"path": {
+			"id": "int",
+			"name": "string"
+		},
+		"parameters": {},
+		"response_body": {
+			"name": "postreswithIdandName",
+			"fields": {
+				"status": "",
+				"message": "",
+				"traceId": "",
+				"id": 0,
+				"lists": []
+			}
+		}
+	},
+	{
+		"route": "postTest",
+		"name": "postTest",
+		"method": "POST",
+		"headers": {
+			"Authorization": "token"
+		},
+		"path": {
+		},
+		"parameters": {},
+		"response_body": {
+			"name": "postres",
+			"fields": {
+				"status": "",
+				"details":{},
+				"id": 0
+			}
+		}
+	},
+	{
+		"route": "postTestwoResponse",
+		"name": "postTestwithoutresponse",
+		"method": "POST",
+		"headers": {
+			"Authorization": "token"
+		},
+		"path": {
+		},
+		"parameters": {},
+		"response_body": {
+			
+		}
+	},
+	{
+		"route": "postTestwithParam",
+		"name": "postTestwithoutresponse1",
+		"method": "POST",
+		"headers": {
+			"Authorization": "token"
+		},
+		"path": {
+		},
+		"parameters": {
+			"name":{
+			"type":"int",
+			"required":true
+			},
+			"id":{
+			"type":"string",
+			"required":false
+			}
+		},
+		"response_body": {
+			
+		}
+	}],
+	"location":"C:\\Users\\admin\\Desktop\\testing_api_gen",
+	"controllerFileName":"controller.py"
+}
