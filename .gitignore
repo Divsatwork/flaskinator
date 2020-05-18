@@ -1,2 +1,4 @@
 
 *.pyc
+*.gz
+flaskinator.egg-info/
