@@ -1,5 +1,5 @@
 import os
-from snippets import flask_snippets
+from .snippets import flask_snippets
 
 class FlaskApiGenerator:
 
